@@ -1,0 +1,42 @@
+---
+title: "Interacciones Tróficas en el Océano Atlántico Sudoccidental"
+author: "T.I.M."
+date: "2026-11-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Obtener datos de Repositorios Públicos
+
+Utilizaremos el paquete rglobi para extraer los datos de la base de datos Global Biotic Interactions (GloBI). La función get_interactions_in_area() nos permite acotar la búsqueda a la región de interés (bbox).
+
+```{r obtener datos}
+# Cargar la librería
+library(rglobi)
+
+# Definir los límites del Océano Atlántico Sudoccidental (bbox)
+# left: -67.266667, bottom: -60.000000, right: -20.000000, top: 5.000000
+bbox_atlantico_so <- c(-67.266667, -60.000000, -20.000000, 5.000000)
+
+# Obtener todas las interacciones registradas en el área delimitada
+interacciones_area <- get_interactions_in_area(bbox = bbox_atlantico_so)
+
+# Filtrar el data frame para obtener exclusivamente interacciones tróficas (depredador-presa)
+tipos_troficos <- c("eats", "preysOn", "eatenBy", "preyedUponBy")
+interacciones_troficas <- subset(interacciones_area, interaction_type %in% tipos_troficos)
+```
+
+## Encabezado y primeras filas de los datos
+
+A continuación, extraemos el nombre de las columnas (el encabezado) para entender qué variables tenemos a disposición y luego visualizamos los primeros 5 registros de nuestra tabla filtrada.
+
+```{r encabezado datos, echo=FALSE}
+# Mostrar el encabezado (nombres de las variables)
+names(interacciones_troficas)
+
+# Mostrar las primeras 5 filas del data frame
+head(interacciones_troficas, 5)
+```
