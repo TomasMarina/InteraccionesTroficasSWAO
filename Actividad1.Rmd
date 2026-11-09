@@ -33,6 +33,13 @@ interacciones_troficas <- subset(interacciones_area, interaction_type %in% tipos
 
 A continuación, extraemos el nombre de las columnas (el encabezado) para entender qué variables tenemos a disposición y luego visualizamos los primeros 5 registros de nuestra tabla filtrada.
 
+Estructura: Cada fila representa una observación única de una interacción entre dos organismos.
+Variables clave:
+source_taxon_name y target_taxon_name: Indican los nombres científicos de las especies involucradas
+(el consumidor y el recurso, o viceversa, dependiendo del tipo de interacción).
+interaction_type: Define el rol ecológico en el encuentro
+(por ejemplo, eats o preysOn significa que el taxón de origen depreda al taxón objetivo).
+
 ```{r encabezado datos, echo=FALSE}
 # Mostrar el encabezado (nombres de las variables)
 names(interacciones_troficas)
