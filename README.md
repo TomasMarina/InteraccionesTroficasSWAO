@@ -1,4 +1,4 @@
-# Interacciones tróficas en el Océano Atlántico Sudoccidental
+# Actividades 1 y 2 de Semana Pre-Hackatón
 Repositorio de interacciones tróficas (presa-depredador) en el Océano Atlántico Sudoccidental.
 Bases de datos consultadas: Global Biotic Interactions (GloBI).
 
