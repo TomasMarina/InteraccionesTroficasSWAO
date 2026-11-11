@@ -14,19 +14,27 @@ knitr::opts_chunk$set(echo = TRUE)
 Utilizaremos el paquete rglobi para extraer los datos de la base de datos Global Biotic Interactions (GloBI). La función get_interactions_in_area() nos permite acotar la búsqueda a la región de interés (bbox).
 
 ```{r obtener datos}
-# Cargar la librería
+# Cargar las librerías necesarias
 library(rglobi)
+library(dplyr) # Para combinar data frames de forma segura
 
 # Definir los límites del Océano Atlántico Sudoccidental (bbox)
 # left: -67.266667, bottom: -60.000000, right: -20.000000, top: 5.000000
 bbox_atlantico_so <- c(-67.266667, -60.000000, -20.000000, 5.000000)
 
-# Obtener todas las interacciones registradas en el área delimitada
+# Obtener todas las interacciones registradas en el área delimitada desde GloBI
 interacciones_area <- get_interactions_in_area(bbox = bbox_atlantico_so)
 
 # Filtrar el data frame para obtener exclusivamente interacciones tróficas (depredador-presa)
 tipos_troficos <- c("eats", "preysOn", "eatenBy", "preyedUponBy")
 interacciones_troficas <- subset(interacciones_area, interaction_type %in% tipos_troficos)
+
+# Cargar el archivo CSV local con interacciones adicionales
+datos_burdwood <- read.csv("ListaInteracciones_BurdwoodBank.csv", stringsAsFactors = FALSE)
+
+# Integrar el archivo CSV al data frame 'interacciones_troficas'
+# Se utiliza bind_rows para emparejar automáticamente las columnas por nombre
+interacciones_troficas <- bind_rows(interacciones_troficas, datos_burdwood)
 ```
 
 ## Encabezado y primeras filas de los datos
