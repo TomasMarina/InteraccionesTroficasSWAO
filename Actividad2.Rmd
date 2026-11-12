@@ -2,7 +2,9 @@
 title: "Actividad 2 - Semana Pre-Hackatón"
 author: "T.I.M."
 date: "2026-11-12"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
