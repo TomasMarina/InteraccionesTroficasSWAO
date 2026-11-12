@@ -1,0 +1,160 @@
+---
+title: "Actividad 2 - Semana Pre-Hackatón"
+author: "T.I.M."
+date: "2026-11-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Obtener datos de Repositorios Públicos
+
+Utilizaremos el paquete rglobi para extraer los datos de la base de datos Global Biotic Interactions (GloBI). La función get_interactions_in_area() nos permite acotar la búsqueda a la región de interés, el Océano Atlántico Sudoccidental (OAS). Además, incorporaremos datos que corresponden a una zona particular del OAS, el Banco Burdwood (BB).
+
+```{r obtener datos}
+# Cargar las librerías necesarias
+library(rglobi)
+library(dplyr)
+
+# Definir los límites del Océano Atlántico Sudoccidental (bbox)
+# left: -67.266667, bottom: -60.000000, right: -20.000000, top: 5.000000
+bbox_atlantico_so <- c(-67.266667, -60.000000, -20.000000, 5.000000)
+
+# Obtener todas las interacciones registradas en el área delimitada desde GloBI
+interacciones_area <- get_interactions_in_area(bbox = bbox_atlantico_so)
+
+# Filtrar y estandarizar los datos de rglobi
+tipos_troficos <- c("eats", "preysOn", "eatenBy", "preyedUponBy")
+
+rglobi_estandarizado <- interacciones_area %>%
+  filter(interaction_type %in% tipos_troficos) %>%
+  mutate(
+    # Asignar Consumer y Resource dependiendo de la dirección de la interacción
+    Consumer = ifelse(interaction_type %in% c("eats", "preysOn"), source_taxon_name, target_taxon_name),
+    Resource = ifelse(interaction_type %in% c("eats", "preysOn"), target_taxon_name, source_taxon_name),
+    Location = "OAS",
+    Data_source = "rglobi"
+  ) %>%
+  # Conservar únicamente las columnas solicitadas
+  select(Resource, Consumer, Location, Data_source)
+
+# Cargar el archivo CSV local con interacciones adicionales
+datos_burdwood <- read.csv("ListaInteracciones_BurdwoodBank.csv", stringsAsFactors = FALSE)
+
+# Estandarizar los datos locales de Banco Burdwood
+burdwood_estandarizado <- datos_burdwood %>%
+  select(Resource, Consumer) %>% 
+  mutate(
+    Location = "BB",
+    Data_source = "local"
+  )
+
+# Integrar ambos data frames estandarizados en uno solo
+interacciones_troficas <- bind_rows(rglobi_estandarizado, burdwood_estandarizado)
+```
+
+## Crear gráficos
+
+```{r plots}
+# Cargar las librerías necesarias
+library(ggplot2)
+
+# 1. Gráfico de Barras: Top 10 Consumidores con más registros
+# Primero identificamos las 10 especies con más registros globales
+top_10_especies <- interacciones_troficas %>%
+  count(Consumer, sort = TRUE) %>%
+  head(10) %>%
+  pull(Consumer)
+
+# Luego filtramos los datos para esos top 10 y contamos agregando la variable Location
+top_consumidores_loc <- interacciones_troficas %>%
+  filter(Consumer %in% top_10_especies) %>%
+  count(Consumer, Location)
+
+# Graficamos usando el fill para diferenciar Location
+ggplot(top_consumidores_loc, aes(x = factor(Consumer, levels = rev(top_10_especies)), y = n, fill = Location)) +
+  geom_col(color = "black", alpha = 0.8) +
+  coord_flip() + # Invertir ejes para facilitar la lectura de especies
+  labs(title = "Top 10 Consumidores con mayor número de registros",
+       x = "Consumidor (Especie)",
+       y = "Número de Interacciones",
+       fill = "Ubicación") +
+  theme_minimal()
+
+# 2. Gráfico de Dispersión: Presas vs Depredadores por especie y ubicación
+# Contar presas por consumidor y ubicación
+presas_por_consumidor <- interacciones_troficas %>%
+  group_by(Consumer, Location) %>%
+  summarise(Num_Presas = n_distinct(Resource, na.rm = TRUE), .groups = "drop") %>%
+  rename(Especie = Consumer)
+
+# Contar depredadores por presa y ubicación
+depredadores_por_presa <- interacciones_troficas %>%
+  group_by(Resource, Location) %>%
+  summarise(Num_Depredadores = n_distinct(Consumer, na.rm = TRUE), .groups = "drop") %>%
+  rename(Especie = Resource)
+
+# Unir ambas métricas para cada especie y ubicación; reemplazar los NA con 0
+grado_especies <- full_join(presas_por_consumidor, depredadores_por_presa, by = c("Especie", "Location")) %>%
+  mutate(
+    Num_Presas = ifelse(is.na(Num_Presas), 0, Num_Presas),
+    Num_Depredadores = ifelse(is.na(Num_Depredadores), 0, Num_Depredadores)
+  )
+
+# Crear el gráfico de dispersión con color mapeado a Location
+ggplot(grado_especies, aes(x = Num_Presas, y = Num_Depredadores, color = Location)) +
+  geom_point(alpha = 0.7, size = 3) +
+  labs(title = "Relación de Dieta y Vulnerabilidad por Especie",
+       subtitle = "Diferenciado por Ubicación (OAS vs. BB)",
+       x = "Número de Presas Distintas Consumidas (Dieta)",
+       y = "Número de Depredadores Distintos (Vulnerabilidad)",
+       color = "Ubicación") +
+  theme_minimal()
+```
+
+## Definir funciones sencillas
+
+```{r functions}
+# Cargar las librerías necesarias
+library(rglobi)
+library(dplyr)
+
+# Función 1: Estandarizar Datos de rglobi
+# Definir la función
+estandarizar_rglobi <- function(datos_crudos) {
+  tipos_troficos <- c("eats", "preysOn", "eatenBy", "preyedUponBy")
+  
+  datos_estandarizados <- datos_crudos %>%
+    filter(interaction_type %in% tipos_troficos) %>%
+    mutate(
+      # Asignar Consumer y Resource dependiendo de la dirección de la interacción
+      Consumer = ifelse(interaction_type %in% c("eats", "preysOn"), source_taxon_name, target_taxon_name),
+      Resource = ifelse(interaction_type %in% c("eats", "preysOn"), target_taxon_name, source_taxon_name),
+      Data_source = "rglobi"
+    ) %>%
+    # Conservar únicamente las columnas solicitadas
+    select(Resource, Consumer, Data_source)
+  
+  return(datos_estandarizados)
+}
+# Aplicar la función al data frame de interacciones tróficas
+lista_estandar <- estandarizar_rglobi(interacciones_area)
+# Mostrar la tabla resultante
+print(lista_estandar)
+
+# Función 2: Contar Especies Únicas
+# Definir la función
+contar_especies_unicas <- function(datos) {
+  datos %>%
+    summarise(
+      Resource = n_distinct(Resource, na.rm = TRUE),
+      Consumer = n_distinct(Consumer, na.rm = TRUE)
+    )
+}
+# Aplicar la función al data frame de interacciones tróficas
+resumen_especies <- contar_especies_unicas(interacciones_troficas)
+# Mostrar la tabla resultante
+print(resumen_especies)
+```
