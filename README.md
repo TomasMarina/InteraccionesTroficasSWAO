@@ -6,5 +6,4 @@ registros suplementarios provenientes del archivo local ListaInteracciones_Burdw
 Naturaleza de los datos: Se trata de una red ampliada de interacciones depredador-presa (tróficas). 
 Los registros de GloBI están limitados estrictamente al polígono del Océano Atlántico Sudoccidental, y ahora se encuentran enriquecidos por los datos empíricos específicos del Banco Burdwood.
 
-Estructura: Cada fila representa una observación única de una interacción entre dos organismos. 
-La función bind_rows garantizó que las columnas coincidentes entre ambas fuentes se alinearan correctamente, rellenando con valores nulos (NA) aquellas variables que solo existían en una de las dos tablas.
+Se han creado gráficos y funciones para describir brevemente los datos.
