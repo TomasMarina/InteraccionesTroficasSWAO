@@ -35,14 +35,15 @@ rglobi_estandarizado <- interacciones_area %>%
     # Asignar Consumer y Resource dependiendo de la dirección de la interacción
     Consumer = ifelse(interaction_type %in% c("eats", "preysOn"), source_taxon_name, target_taxon_name),
     Resource = ifelse(interaction_type %in% c("eats", "preysOn"), target_taxon_name, source_taxon_name),
-    Location = "OAS",
+    Location = "SWAO", 
     Data_source = "rglobi"
   ) %>%
   # Conservar únicamente las columnas solicitadas
   select(Resource, Consumer, Location, Data_source)
 
-# Cargar el archivo CSV local con interacciones adicionales
-datos_burdwood <- read.csv("ListaInteracciones_BurdwoodBank.csv", stringsAsFactors = FALSE)
+# Cargar el archivo CSV local utilizando here()
+# here() busca automáticamente desde la raíz del proyecto (OceanWeek_PreHackaton2026)
+datos_burdwood <- read.csv(("data/ListaInteracciones_BurdwoodBank.csv"), stringsAsFactors = FALSE)
 
 # Estandarizar los datos locales de Banco Burdwood
 burdwood_estandarizado <- datos_burdwood %>%
@@ -85,6 +86,9 @@ head(interacciones_troficas, 5)
 # Cargar las librerías necesarias
 library(ggplot2)
 
+# Crear la carpeta de figuras si no existe en el directorio principal
+dir.create("../figuras", showWarnings = FALSE)
+
 # 1. Gráfico de Barras: Top 10 Consumidores con más registros
 # Primero identificamos las 10 especies con más registros globales
 top_10_especies <- interacciones_troficas %>%
@@ -97,8 +101,8 @@ top_consumidores_loc <- interacciones_troficas %>%
   filter(Consumer %in% top_10_especies) %>%
   count(Consumer, Location)
 
-# Graficamos usando el fill para diferenciar Location
-ggplot(top_consumidores_loc, aes(x = factor(Consumer, levels = rev(top_10_especies)), y = n, fill = Location)) +
+# Graficamos y guardamos el gráfico en un objeto 'grafico_barras'
+grafico_barras <- ggplot(top_consumidores_loc, aes(x = factor(Consumer, levels = rev(top_10_especies)), y = n, fill = Location)) +
   geom_col(color = "black", alpha = 0.8) +
   coord_flip() + # Invertir ejes para facilitar la lectura de especies
   labs(title = "Top 10 Consumidores con mayor número de registros",
@@ -106,6 +110,12 @@ ggplot(top_consumidores_loc, aes(x = factor(Consumer, levels = rev(top_10_especi
        y = "Número de Interacciones",
        fill = "Ubicación") +
   theme_minimal()
+
+# Mostrar el gráfico en el documento HTML
+print(grafico_barras)
+
+# Guardar el gráfico en la carpeta 'figuras'
+ggsave(filename = "figuras/top10_consumidores.png", plot = grafico_barras, width = 8, height = 6, dpi = 300)
 
 # 2. Gráfico de Dispersión: Presas vs Depredadores por especie y ubicación
 # Contar presas por consumidor y ubicación
@@ -127,8 +137,8 @@ grado_especies <- full_join(presas_por_consumidor, depredadores_por_presa, by = 
     Num_Depredadores = ifelse(is.na(Num_Depredadores), 0, Num_Depredadores)
   )
 
-# Crear el gráfico de dispersión con color mapeado a Location
-ggplot(grado_especies, aes(x = Num_Presas, y = Num_Depredadores, color = Location)) +
+# Crear el gráfico de dispersión y guardarlo en un objeto 'grafico_dispersion'
+grafico_dispersion <- ggplot(grado_especies, aes(x = Num_Presas, y = Num_Depredadores, color = Location)) +
   geom_point(alpha = 0.7, size = 3) +
   labs(title = "Relación de Dieta y Vulnerabilidad por Especie",
        subtitle = "Diferenciado por Ubicación (OAS vs. BB)",
@@ -136,6 +146,12 @@ ggplot(grado_especies, aes(x = Num_Presas, y = Num_Depredadores, color = Locatio
        y = "Número de Depredadores Distintos (Vulnerabilidad)",
        color = "Ubicación") +
   theme_minimal()
+
+# Mostrar el gráfico en el documento HTML
+print(grafico_dispersion)
+
+# Guardar el gráfico en la carpeta 'figuras'
+ggsave(filename = "figuras/dieta_vulnerabilidad.png", plot = grafico_dispersion, width = 8, height = 6, dpi = 300)
 ```
 
 ## Dos Funciones Sencillas
